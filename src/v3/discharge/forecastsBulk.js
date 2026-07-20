@@ -5,7 +5,8 @@ import {
   dischargeVariable,
   getTimeCoordinateValues,
   openZarrArray,
-  resolveRiverIdsToIndices
+  resolveRiverIdsToIndices,
+  roundValue
 } from "./zarrFetchers.js";
 import membersToMedian from "./membersToMedian.js";
 import {forecastZarr} from "../urls.js";
@@ -104,9 +105,14 @@ export default async function ({date, riverIndices, riverIds, onProgress}) {
       // split into one series per member, the shape membersToMedian takes. This is transient: only
       // the median it returns is kept, so a selection holds one reach's ensemble at a time rather
       // than every reach's at once.
+      // This path reads the selection's buffer directly rather than through fetchZarrValues, so it
+      // has to apply the same 2-decimal rounding itself — see the note there on bitrounding.
+      // Rounding here rather than on the median is what keeps this reader's output identical to
+      // the single-river one: membersToMedian picks a member's value rather than averaging two, so
+      // a rounded input is a rounded output.
       const discharge = Array.from({length: nEns}, (_, e) => {
         const member = new Float64Array(nT);
-        for (let t = 0; t < nT; t++) member[t] = data[e * sEns + t * sT + r];
+        for (let t = 0; t < nT; t++) member[t] = roundValue(data[e * sEns + t * sT + r]);
         return member;
       });
       forecasts.set(key, {riverIndex, ...membersToMedian(discharge)});

@@ -2,6 +2,7 @@
 
 // all data from rfsv3 are zarr version/format 3
 import {FetchStore, get, open} from "zarrita"
+import {registerCodecs} from "../codecs.js";
 
 // The controlled vocabulary of the v3 stores — the names every reader addresses arrays by. These
 // live here, not in each reader, so a rename in the data is one edit. Resolutions are not here:
@@ -14,9 +15,34 @@ const dischargeVariable = "Q";
 
 
 const openZarrArray = async ({zarrUrl, variable}) => {
+  registerCodecs();
   const store = new FetchStore(`${zarrUrl}/${variable}`);
   return await open.v3(store, {kind: "array"});
 }
+
+// The v3 stores are compressed with bitrounding, which trades the low mantissa bits for a much
+// smaller file. That is lossy in a way that shows: a discharge the model produced as 12.34 comes
+// back as 12.339996337890625, and no amount of formatting downstream makes the stored value itself
+// honest. Two decimals is the precision this data is meaningful to anyway — well below the model's
+// own error — so retrievals round to it here, once, rather than leaving every consumer to discover
+// the ragged decimals and paper over them at their own display layer.
+//
+// This is deliberately not configurable. The point is that every reader in the package returns
+// values at the same precision; a per-call override would just reintroduce the inconsistency.
+const DECIMAL_PLACES = 2;
+const ROUNDING_FACTOR = 10 ** DECIMAL_PLACES;
+
+// Multiply-round-divide rather than Number(v.toFixed(2)): toFixed rounds on the decimal string and
+// so is exact where `v * 100` is not (1.005 * 100 is 100.49999999999999), but it allocates a string
+// per value and the bulk forecast reader runs this over millions. The two disagree only for values
+// sitting within an ULP of a half-cent, which bitrounded float32 discharge does not produce, and
+// where "correct" is arbitrary anyway.
+//
+// NaN and ±Infinity fall through unchanged, which is what decodeScaleOffsetCompression's NaN fill
+// values depend on.
+const roundValue = (value) => Math.round(value * ROUNDING_FACTOR) / ROUNDING_FACTOR;
+
+const roundValues = (values) => values.map(roundValue);
 
 const resolveRiverIndex = async ({zarrUrl, riverIndex, riverId}) => {
   if (riverIndex === undefined && riverId === undefined) {
@@ -47,15 +73,18 @@ const decodeScaleOffsetCompression = (values, attrs) => {
   });
 }
 
-const fetchZarrValues = async ({zarrUrl, variable, selection = null}) => {
+// `round` is opt-out for the coordinate reads below: riverId and recurrence_interval are integer
+// labels, not measurements, so rounding them is a no-op bought at one pass over an axis with an
+// entry per river in the model.
+const fetchZarrValues = async ({zarrUrl, variable, selection = null, round = true}) => {
   const node = await openZarrArray({zarrUrl, variable});
   const array = await get(node, selection);
-  const values = [...array.data];
-  return decodeScaleOffsetCompression(values, node.attrs);
+  const values = decodeScaleOffsetCompression([...array.data], node.attrs);
+  return round ? roundValues(values) : values;
 }
 
 const getCoordinateValues = async ({zarrUrl, variable}) => {
-  return await fetchZarrValues({zarrUrl, variable, selection: [null]});
+  return await fetchZarrValues({zarrUrl, variable, selection: [null], round: false});
 }
 
 const getCoordinateIndex = async ({zarrUrl, variable, value}) => {
@@ -97,4 +126,7 @@ export {
   openZarrArray,
   resolveRiverIdsToIndices,
   resolveRiverIndex,
+  DECIMAL_PLACES,
+  roundValue,
+  roundValues,
 }
