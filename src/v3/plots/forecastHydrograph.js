@@ -1,16 +1,32 @@
 import {t, tf} from "./translations";
 import zoomPlugin from "chartjs-plugin-zoom";
 import {AXIS, Chart, chartCanvas, GRID, rgba, TEXT} from "./shared";
+import {levelDatasets, levelsVisibleByDefault, normalizeLevels} from "./thresholds";
 
 Chart.register(zoomPlugin);
 const SKY = "rgb(56,189,248)";
 const pts = (dates, ys) => dates.map((d, i) => ({x: d.getTime(), y: ys[i]})).filter((p) => Number.isFinite(p.y));
+const finiteMax = (values) => values.reduce((acc, v) => (Number.isFinite(v) && v > acc ? v : acc), -Infinity);
 
-function renderForecastHydrograph(host, fc) {
+/**
+ * The 15-day ensemble forecast.
+ *
+ * `returnPeriods` is optional context, not part of the forecast: the recurrence-interval discharges
+ * for this reach ({2: 451.2, ...} as returned by the returnPeriods reader), or any array of named
+ * warning levels — see normalizeLevels() in thresholds.js. Given, every level is on the chart and
+ * in the legend; whether they start out shown is levelsVisibleByDefault()'s call. Absent, the chart
+ * renders exactly as it did before.
+ *
+ * `levelsAs` is "boxes" (shaded bands, the default) or "lines" (dashed rules).
+ */
+function renderForecastHydrograph(host, fc, {returnPeriods, levelsAs = "boxes"} = {}) {
   const canvas = chartCanvas(host);
   const {riverId, time: x, stats: b} = fc;
   const firstX = x.length ? x[0].getTime() : 0;
   const lastX = x.length ? x[x.length - 1].getTime() : firstX;
+  // The peak of the ensemble median is what decides whether the levels come up shown.
+  const levels = normalizeLevels(returnPeriods);
+  const showLevels = levelsVisibleByDefault(levels, finiteMax(b.median ?? []));
   const chart = new Chart(canvas, {
     type: "line",
     data: {
@@ -67,7 +83,8 @@ function renderForecastHydrograph(host, fc) {
           pointRadius: 0,
           pointHitRadius: 6,
           tension: 0.2
-        }
+        },
+        ...levelDatasets(levels, {mode: levelsAs, firstX, lastX, hidden: !showLevels})
       ]
     },
     options: {
@@ -82,6 +99,9 @@ function renderForecastHydrograph(host, fc) {
         },
         title: {display: true, color: TEXT, text: tf("chart.forecastHydrograph", {riverId})},
         tooltip: {
+          // A warning level is a constant, not a reading at this timestep — and it carries only two
+          // points, so in index mode it would join the tooltip at the first and last steps alone.
+          filter: (it) => !it.dataset.rfsLevel,
           callbacks: {
             title: (items) => new Date(items[0].parsed.x).toISOString().slice(0, 16).replace("T", " ") + " UTC",
             label: (it) => ` ${it.dataset.label}: ${it.parsed.y.toFixed(2)} m³/s`

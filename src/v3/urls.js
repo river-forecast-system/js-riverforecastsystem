@@ -9,8 +9,10 @@
 import {v3Base} from "./config.js";
 
 // ── hydrography ──────────────────────────────────────────────────────────────
-const _globalHydrographyGroupNumber = "000";
-const _streamsPmtilesFile = "streams_z4delayed.pmtiles";
+// The group holding the whole network, as opposed to a regional subset. Unpadded: the directory is
+// `group=0`, so this is the literal name, not a number that happens to render that way.
+const _globalHydrographyGroupNumber = "0";
+const _streamsPmtilesFile = "streams.pmtiles";
 const _metadataStore = "metadata.zarr";
 const hydrographyGroup = ({group} = {}) => `${v3Base()}/hydrography/group=${group}`;
 const streamsPmtiles = () => `${hydrographyGroup({group: _globalHydrographyGroupNumber})}/${_streamsPmtilesFile}`;

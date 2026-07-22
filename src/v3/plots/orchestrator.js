@@ -76,14 +76,21 @@ async function plotAllRetro(root, ts, {lang} = {}) {
   );
 }
 
-/** Render the forecast chart into `root`. `lang` behaves as in plotAllRetro. */
-async function plotAllForecast(root, fc, {lang} = {}) {
+/**
+ * Render the forecast chart into `root`. `lang` behaves as in plotAllRetro.
+ *
+ * `returnPeriods` is the optional warning-level context drawn behind the ensemble — see
+ * renderForecastHydrograph. It is a separate argument rather than a field on `fc` because it comes
+ * from a separate reader (and a separate store): a caller that has one and not the other still
+ * gets a chart. `levelsAs` picks the form they take, "boxes" or "lines".
+ */
+async function plotAllForecast(root, fc, {lang, returnPeriods, levelsAs} = {}) {
   await useLocale(lang);
   destroy(activeForecast);
   activeForecast = [];
   refreshChartTheme(root);
   root.innerHTML = "";
-  activeForecast.push(renderForecastHydrograph(block(root), fc));
+  activeForecast.push(renderForecastHydrograph(block(root), fc, {returnPeriods, levelsAs}));
 }
 
 export {

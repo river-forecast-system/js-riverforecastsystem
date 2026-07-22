@@ -43,6 +43,9 @@ export default {
   "series.range": "Range (min–max)",
   "series.temporalOutlier": "Temporal outlier",
 
+  // warning levels drawn across the forecast — the label names the level, e.g. "25-year"
+  "label.returnPeriodYears": "{n}-year",
+
   // in-chart controls
   "control.all": "All",
   "control.resetZoom": "Reset zoom",

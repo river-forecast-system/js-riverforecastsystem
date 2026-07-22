@@ -36,6 +36,8 @@ export default {
   "series.range": "Plage (min–max)",
   "series.temporalOutlier": "Valeur aberrante temporelle",
 
+  "label.returnPeriodYears": "{n} ans",
+
   "control.all": "Tout",
   "control.resetZoom": "Réinitialiser le zoom",
   "control.yearsShort": "{n} a",

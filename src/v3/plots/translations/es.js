@@ -36,6 +36,8 @@ export default {
   "series.range": "Rango (mín–máx)",
   "series.temporalOutlier": "Valor atípico temporal",
 
+  "label.returnPeriodYears": "{n} años",
+
   "control.all": "Todo",
   "control.resetZoom": "Restablecer zoom",
   "control.yearsShort": "{n} a",
