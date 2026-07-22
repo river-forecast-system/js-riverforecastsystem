@@ -5,8 +5,8 @@
 // own colours from the host's CSS custom properties (--rfs-chart-*, see shared.js), so a consuming
 // app supplies neither strings nor a palette.
 //
-// Reached as rfs.v3.plots, or as the `rfsjs/plots` subpath to keep chart.js out of a bundle that
-// only reads data.
+// Reached at the `rfsjs/v3/plots` subpath and only there — never from the root or from v3/index.js —
+// so chart.js stays out of a bundle that only reads data, and the charting peers stay optional.
 
 import {clearPlots, plotAllForecast, plotAllRetro, restyleCharts} from "./orchestrator.js";
 import {availableLocales, useLocale} from "./translations/index.js";

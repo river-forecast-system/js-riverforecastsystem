@@ -4,8 +4,9 @@ import forecastsBulk from "../../src/v3/discharge/forecastsBulk.js";
 import retrospective from "../../src/v3/discharge/retrospective.js";
 import returnPeriods from "../../src/v3/discharge/returnPeriods.js";
 import maximums from "../../src/v3/discharge/maximums.js";
+import {FloodMapsIndex} from "../../src/v3/floodmaps/index.js";
 import {configure} from "../../src/v3/config.js";
-import {forecastZarr} from "../../src/v3/urls.js";
+import {floodMapsBase, floodMapsTileBoundaries, forecastZarr} from "../../src/v3/urls.js";
 
 const BASE = "https://example.test/v3";
 const realFetch = globalThis.fetch;
@@ -67,6 +68,16 @@ describe("v3 store paths", () => {
     expect(forecastZarr({date: "20260718"})).toBe(partitioned);
     expect(() => forecastZarr({date: "18-07-2026"})).toThrow(/Invalid date format/);
     expect(() => forecastZarr({date: "2026-7-8"})).toThrow(/Invalid date format/);
+  });
+
+  it("reads the flood library from the flood-maps tree, manifest first", async () => {
+    expect(floodMapsBase()).toBe(`${BASE}/flood-maps`);
+    expect(floodMapsTileBoundaries()).toBe(`${BASE}/flood-maps/tile_boundaries.pmtiles`);
+    const urls = recordFetches();
+    // 404 on the manifest is the first thing FloodMapsIndex does, so this is the whole path it walks
+    // before it knows any tile exists.
+    await expect(FloodMapsIndex.open()).rejects.toThrow(/manifest\.json not found/);
+    expect(urls[0]).toBe(`${BASE}/flood-maps/manifest.json`);
   });
 
   it("rejects resolutions that have no store", async () => {

@@ -53,7 +53,7 @@ export default async function ({date, riverIndices, riverIds, onProgress}) {
   }
   where `key` is whatever identified the reach on the way in — a riverIndex if riverIndices was
   passed, a riverId if riverIds was — so a caller that identifies reaches by id downstream (the
-  flood library keys its rivers by comid) does not have to translate the results back.
+  flood library keys its rivers by riverId) does not have to translate the results back.
 
   riverIndices are store rows, which is what the vector tiles already carry per reach. riverIds is
   a deprecated fallback: it costs a scan of the riverId coordinate to translate, so a caller that

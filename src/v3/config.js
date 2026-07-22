@@ -1,8 +1,8 @@
 'use strict';
 
-// Where the v3 data lives. There is one endpoint: the root of the v3 tree. The flood library
-// (FLDPLN) is deliberately absent — that data is read by the consuming app, not by this package,
-// so its location is the app's to hold.
+// Where the v3 data lives. There is one endpoint: the root of the v3 tree. Everything the package
+// reads hangs off it — retrospective, forecasts, hydrography, and the FLDPLN flood libraries under
+// flood-maps/ — so configuring this one value points every reader and url builder at the same tree.
 
 const DEFAULTENDPOINTS = {
   v3Base: "https://d3nbgbhk5goaof.cloudfront.net/synthetic-v3-data"

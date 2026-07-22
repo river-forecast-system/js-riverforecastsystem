@@ -1,12 +1,15 @@
 import {describe, expect, it} from "vitest";
 import {get, open} from "zarrita";
-import {registerCodecs, ShuffleCodec} from "../../src/v3/codecs.js";
 import {DECIMAL_PLACES, roundValue, roundValues} from "../../src/v3/discharge/zarrFetchers.js";
 
-// A real zarr v3 chunk: eight float32s encoded bytes -> shuffle -> zstd, exactly the pipeline the
-// v3 stores are being rewritten with. Held as base64 so the test needs no compressor at runtime.
-// Regenerate by shuffling the raw little-endian bytes and piping them through `zstd -19`.
-const CHUNK_B64 = "KLUv/SQgAQEAoAoAKwB90Ehw1wBSAP8PAUWj5JoAx0l6QTvARABCQEOYwCOL";
+// A real zarr v3 chunk: eight float32s encoded bytes -> blosc(cname=zstd, clevel=5, shuffle),
+// exactly the pipeline the v3 stores are written with. Held as base64 so the test needs no
+// compressor at runtime. Regenerate with zarr-python:
+//
+//   zarr.create_array(store=..., shape=(2, 4), chunks=(2, 4), dtype="float32", zarr_format=3,
+//                     compressors=[BloscCodec(typesize=4, cname="zstd", clevel=5,
+//                                             shuffle="shuffle")])
+const CHUNK_B64 = "AgGTBCAAAAAgAAAAMAAAAKBwRUEK16M7AADkwCtSmkQAAAAAff/HQtAPSUBIAXpD";
 
 // The values as float32 sees them — deliberately ragged in the way bitrounded data is.
 const EXPECTED_RAW = [
@@ -30,52 +33,51 @@ const ARRAY_METADATA = {
   fill_value: 0,
   codecs: [
     {name: "bytes", configuration: {endian: "little"}},
-    {name: "shuffle", configuration: {elementsize: 4}},
-    {name: "zstd", configuration: {level: 19, checksum: false}},
+    {name: "blosc", configuration: {typesize: 4, cname: "zstd", clevel: 5, shuffle: "shuffle", blocksize: 0}},
   ],
   attributes: {},
 };
 
 // zarrita only asks a store for `get(key)`, so an in-memory one is enough to exercise the whole
 // codec pipeline without a network.
-const memoryStore = () => {
+const memoryStore = (meta, key, b64) => {
   const entries = new Map([
-    ["/zarr.json", new TextEncoder().encode(JSON.stringify(ARRAY_METADATA))],
-    ["/c/0/0", Uint8Array.from(atob(CHUNK_B64), c => c.charCodeAt(0))],
+    ["/zarr.json", new TextEncoder().encode(JSON.stringify(meta))],
+    [key, Uint8Array.from(atob(b64), c => c.charCodeAt(0))],
   ]);
-  return {get: async (key) => entries.get(key)};
+  return {get: async (k) => entries.get(k)};
 }
 
-describe("zstd + shuffle decoding", () => {
-  it("decodes a shuffle+zstd chunk through zarrita without numcodecs", async () => {
-    registerCodecs();
-    const node = await open.v3(memoryStore(), {kind: "array"});
+describe("blosc decoding", () => {
+  it("decodes a blosc(zstd, shuffle) chunk through zarrita's default registry", async () => {
+    // Nothing registers a codec by hand. zarrita maps "blosc" to numcodecs/blosc out of the box,
+    // and rollup.config.js is what keeps that one wasm build — and only that one — in the bundle.
+    const node = await open.v3(memoryStore(ARRAY_METADATA, "/c/0/0", CHUNK_B64), {kind: "array"});
     const chunk = await get(node, null);
     expect(Array.from(chunk.data)).toEqual(EXPECTED_RAW);
   });
 
-  it("registers both the zarr v3 and numcodecs spellings of each codec", async () => {
-    registerCodecs();
-    const {registry} = await import("zarrita");
-    for (const name of ["zstd", "numcodecs.zstd", "shuffle", "numcodecs.shuffle"]) {
-      expect(registry.get(name)).toBeDefined();
-    }
-  });
-
-  it("takes the element width from the array dtype, not just the codec config", () => {
-    // A store whose config claims 4 but whose dtype is 8 wide must follow the dtype, or every
-    // value comes back as garbage rather than as an error.
-    const codec = ShuffleCodec.fromConfig({elementsize: 4}, {dataType: "float64"});
-    const src = new Float64Array([1.5, -2.25, 3.125]);
-    const raw = new Uint8Array(src.buffer.slice(0));
-    const shuffled = new Uint8Array(raw.length);
-    const n = src.length;
-    for (let b = 0; b < 8; b++) for (let i = 0; i < n; i++) shuffled[b * n + i] = raw[i * 8 + b];
-    expect(Array.from(new Float64Array(codec.decode(shuffled).buffer))).toEqual([1.5, -2.25, 3.125]);
-  });
-
-  it("refuses a dtype it cannot size", () => {
-    expect(() => ShuffleCodec.fromConfig({}, {dataType: "string"})).toThrow(/fixed-size dtype/);
+  it("decodes a 64-bit array, where a non-zero byteOffset would break the bytes codec", async () => {
+    // zarrita's `bytes` codec builds the chunk with `new BigInt64Array(bytes.buffer,
+    // bytes.byteOffset, …)`, and a TypedArray constructor rejects an offset that is not a multiple
+    // of its element size. A decompressor that hands back a view into its own scratch buffer at a
+    // ragged offset therefore fails on exactly the int64 time coordinate every store carries — the
+    // failure mode the previous fzstd-backed codec had to copy around. numcodecs' blosc returns a
+    // fresh zero-offset buffer; this pins that so a numcodecs upgrade cannot quietly regress it.
+    const meta = {
+      ...ARRAY_METADATA,
+      shape: [5],
+      data_type: "int64",
+      chunk_grid: {name: "regular", configuration: {chunk_shape: [5]}},
+      codecs: [
+        {name: "bytes", configuration: {endian: "little"}},
+        {name: "blosc", configuration: {typesize: 8, cname: "zstd", clevel: 5, shuffle: "shuffle", blocksize: 0}},
+      ],
+    };
+    const b64 = "AgGTCCgAAAAoAAAAOAAAAAEAAAAAAAAAAgAAAAAAAAADAAAAAAAAAAAA72S6P0kY+/////////8=";
+    const node = await open.v3(memoryStore(meta, "/c/0", b64), {kind: "array"});
+    const chunk = await get(node, null);
+    expect(Array.from(chunk.data)).toEqual([1n, 2n, 3n, 1750000000000000000n, -5n]);
   });
 });
 

@@ -10,9 +10,12 @@
   "module": "dist/index.esm.js",
   "exports": {
     ".": "./dist/index.esm.js",
-    "./config": "./dist/config.esm.js",
-    "./plots": "./dist/plots.esm.js",
-    "./urls": "./dist/urls.esm.js"
+    "./v2": "./dist/v2/index.esm.js",
+    "./v3": "./dist/v3/index.esm.js",
+    "./v3/discharge": "./dist/v3/discharge.esm.js",
+    "./v3/floodmaps": "./dist/v3/floodmaps.esm.js",
+    "./v3/hydrography": "./dist/v3/hydrography.esm.js",
+    "./v3/plots": "./dist/v3/plots.esm.js"
   },
   "scripts": {
     "test": "vitest run",
@@ -25,16 +28,23 @@
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-chart-matrix": "^3.0.5",
     "chartjs-plugin-zoom": "^2.2.0",
-    "date-fns": "^4.4.0"
+    "date-fns": "^4.4.0",
+    "numcodecs": "^0.3.2"
+  },
+  "peerDependenciesMeta": {
+    "chart.js": {"optional": true},
+    "chartjs-adapter-date-fns": {"optional": true},
+    "chartjs-chart-matrix": {"optional": true},
+    "chartjs-plugin-zoom": {"optional": true},
+    "date-fns": {"optional": true}
   },
   "devDependencies": {
-    "fzstd": "^0.1.1",
-    "zarrita": "^0.7.3",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^1.0.0",
     "rollup": "4.59.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "zarrita": "^0.7.3"
   },
   "files": [
     "dist"

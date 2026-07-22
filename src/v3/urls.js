@@ -3,16 +3,22 @@
 // The source of truth diagram is in ${v3Base}/organization.md
 // The base urls come from config.js, so callers configure() once and every builder here follows.
 
-// This module builds urls and nothing else. Configuring where the data lives is a separate
-// concern and lives with config.js — reach it as rfs.v3.configure, or import the dependency-free
-// `rfsjs/config` subpath. It is deliberately not re-exported here.
+// This module builds urls and nothing else. Configuring where the data lives is a separate concern
+// and lives with config.js — both are reached together at the dependency-free `rfsjs/v3` entry,
+// which is where consumers import them from. config is deliberately not re-exported here.
 import {v3Base} from "./config.js";
 
 // ── hydrography ──────────────────────────────────────────────────────────────
 const _globalHydrographyGroupNumber = "000";
 const _streamsPmtilesFile = "streams_z4delayed.pmtiles";
+const _metadataStore = "metadata.zarr";
 const hydrographyGroup = ({group} = {}) => `${v3Base()}/hydrography/group=${group}`;
 const streamsPmtiles = () => `${hydrographyGroup({group: _globalHydrographyGroupNumber})}/${_streamsPmtilesFile}`;
+// Per-reach attributes of the stream network: riverId, the topology links, and the location a map
+// jumps to. Its riverId axis is written in the same order as the discharge stores', so a reach's
+// position in it is the riverIndex those readers take.
+const hydrographyMetadataZarr = ({group = _globalHydrographyGroupNumber} = {}) =>
+  `${hydrographyGroup({group})}/${_metadataStore}`;
 
 // ── retrospective ────────────────────────────────────────────────────────────
 const allowedResolutions = ["hourly", "daily", "monthly", "yearly"];
@@ -36,6 +42,17 @@ const _datePartition = date => {
 const forecastDir = ({date}) => `${v3Base()}/forecasts15/${_datePartition(date)}`;
 const forecastZarr = ({date}) => `${forecastDir({date})}/discharge.zarr`;
 
+// ── flood maps (FLDPLN) ──────────────────────────────────────────────────────
+// Individual tile stores are deliberately absent: their `lat=*/lon=*/*.zarr` paths come from
+// manifest.json, which is the source of truth for the tiling, so a builder here would be a second
+// one. The boundaries pmtiles is here for the same reason streamsPmtiles() is — a map layer needs
+// the url without reading anything.
+const _floodMapsManifestFile = "manifest.json";
+const _floodMapsTileBoundariesFile = "tile_boundaries.pmtiles";
+const floodMapsBase = () => `${v3Base()}/flood-maps`;
+const floodMapsManifest = () => `${floodMapsBase()}/${_floodMapsManifestFile}`;
+const floodMapsTileBoundaries = () => `${floodMapsBase()}/${_floodMapsTileBoundariesFile}`;
+
 // ── map-styles ─────────────────────────────────────────────────────────────
 const stylesets = Object.freeze({
   timeseries: "time-series",
@@ -50,11 +67,13 @@ const streamsStyles = ({date, styleset}) => {
 
 export {
   // hydrography url builders
-  hydrographyGroup, streamsPmtiles,
+  hydrographyGroup, streamsPmtiles, hydrographyMetadataZarr,
   // retrospective url builders
   retrospectiveZarr, returnPeriodsZarr, maximumsZarr,
   // forecast url builders
   forecastDir, forecastZarr,
+  // flood map (FLDPLN) url builders
+  floodMapsBase, floodMapsManifest, floodMapsTileBoundaries,
   // map-styles url builders
   stylesets, streamsStyles
 }

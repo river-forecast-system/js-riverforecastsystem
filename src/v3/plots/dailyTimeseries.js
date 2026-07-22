@@ -5,6 +5,17 @@ import {AXIS, Chart, chartCanvas, GRID, TEXT} from "./shared";
 
 Chart.register(Decimation, zoomPlugin);
 
+// The retrospective series runs for decades; opening on all of it hides the recent record in a wall
+// of ink. Start on the most recent decade — the range buttons and panning still reach the rest.
+const DEFAULT_YEARS = 10;
+
+// Start of the window ending at `endMs`, clamped so it never runs off the front of the record.
+const yearsBefore = (endMs, years, floorMs) => {
+  const start = new Date(endMs);
+  start.setFullYear(start.getFullYear() - years);
+  return Math.max(floorMs, start.getTime());
+};
+
 function renderDailyTimeseries(host, ts) {
   const tools = document.createElement("div");
   tools.className = "chart-tools";
@@ -59,7 +70,7 @@ function renderDailyTimeseries(host, ts) {
         x: {
           type: "time",
           time: {unit: "year"},
-          min: firstX,
+          min: yearsBefore(lastX, DEFAULT_YEARS, firstX),
           max: lastX,
           title: {display: true, text: t("axis.datetime"), color: AXIS},
           ticks: {color: AXIS, maxRotation: 0},
@@ -71,13 +82,7 @@ function renderDailyTimeseries(host, ts) {
   });
   const setRange = (years) => {
     const x = chart.options.scales.x;
-    if (years === "all") {
-      x.min = firstX;
-    } else {
-      const start = new Date(lastX);
-      start.setFullYear(start.getFullYear() - years);
-      x.min = Math.max(firstX, start.getTime());
-    }
+    x.min = years === "all" ? firstX : yearsBefore(lastX, years, firstX);
     x.max = lastX;
     chart.update("none");
   };
