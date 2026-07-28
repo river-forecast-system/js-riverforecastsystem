@@ -1,26 +1,12 @@
-// This is the source of truth for building urls around the v3 data organization pattern.
-// Users and submodules should all refer to this module for consistency and correctness and easy updates.
-// The source of truth diagram is in ${v3Base}/organization.md
-// The base urls come from config.js, so callers configure() once and every builder here follows.
-
-// This module builds urls and nothing else. Configuring where the data lives is a separate concern
-// and lives with config.js — both are reached together at the dependency-free `rfsjs/v3` entry,
-// which is where consumers import them from. config is deliberately not re-exported here.
 import {v3Base} from "./config.js";
 
 // ── hydrography ──────────────────────────────────────────────────────────────
-// The group holding the whole network, as opposed to a regional subset. Unpadded: the directory is
-// `group=0`, so this is the literal name, not a number that happens to render that way.
-const _globalHydrographyGroupNumber = "0";
+const globalGroupNumber = "0";
 const _streamsPmtilesFile = "streams.pmtiles";
 const _metadataStore = "metadata.zarr";
 const hydrographyGroup = ({group} = {}) => `${v3Base()}/hydrography/group=${group}`;
-const streamsPmtiles = () => `${hydrographyGroup({group: _globalHydrographyGroupNumber})}/${_streamsPmtilesFile}`;
-// Per-reach attributes of the stream network: riverId, the topology links, and the location a map
-// jumps to. Its riverId axis is written in the same order as the discharge stores', so a reach's
-// position in it is the riverIndex those readers take.
-const hydrographyMetadataZarr = ({group = _globalHydrographyGroupNumber} = {}) =>
-  `${hydrographyGroup({group})}/${_metadataStore}`;
+const streamsPmtiles = () => `${hydrographyGroup({group: globalGroupNumber})}/${_streamsPmtilesFile}`;
+const hydrographyMetadataZarr = ({group = globalGroupNumber} = {}) => `${hydrographyGroup({group})}/${_metadataStore}`;
 
 // ── retrospective ────────────────────────────────────────────────────────────
 const allowedResolutions = ["hourly", "daily", "monthly", "yearly"];
@@ -57,14 +43,14 @@ const floodMapsTileBoundaries = () => `${floodMapsBase()}/${_floodMapsTileBounda
 
 // ── map-styles ─────────────────────────────────────────────────────────────
 const stylesets = Object.freeze({
-  timeseries: "time-series",
+  timeseries: "timeseries",
   maxFlow: "max-flow",
   timeToPeak: "time-to-peak",
   belowQ95: "below-q95"
 });
 const streamsStyles = ({date, styleset}) => {
   if (!styleset) throw new Error("streamsStyles requires a styleset, consult stylesets for valid values");
-  return `${forecastDir({date})}/map-styles/${styleset}/styles.`;
+  return `${forecastDir({date})}/maps/${styleset}/styles`;
 };
 
 export {
@@ -77,5 +63,5 @@ export {
   // flood map (FLDPLN) url builders
   floodMapsBase, floodMapsManifest, floodMapsTileBoundaries,
   // map-styles url builders
-  stylesets, streamsStyles
+  stylesets, streamsStyles,
 }
