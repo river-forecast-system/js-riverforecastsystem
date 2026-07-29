@@ -42,14 +42,12 @@ const floodMapsManifest = () => `${floodMapsBase()}/${_floodMapsManifestFile}`;
 const floodMapsTileBoundaries = () => `${floodMapsBase()}/${_floodMapsTileBoundariesFile}`;
 
 // ── map-styles ─────────────────────────────────────────────────────────────
-const stylesets = Object.freeze({
-  timeseries: "timeseries",
-  maxFlow: "max-flow",
-  timeToPeak: "time-to-peak",
-  belowQ95: "below-q95"
-});
+const stylesets = Object.freeze(["timeseries", "max-flow", "time-to-peak", "below-q95"]);
 const streamsStyles = ({date, styleset}) => {
   if (!styleset) throw new Error("streamsStyles requires a styleset, consult stylesets for valid values");
+  if (!stylesets.includes(styleset)) {
+    throw new Error(`Invalid styleset: ${styleset}. Must be one of ${stylesets.join(", ")}.`);
+  }
   return `${forecastDir({date})}/maps/${styleset}/styles`;
 };
 
