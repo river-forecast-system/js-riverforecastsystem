@@ -7,7 +7,9 @@ import {FloodMapsIndex} from "../../src/v3/floodmaps/index.js";
 // it is absent. Point RFS_FLOOD_MAPS_ROOT at any directory holding manifest.json + the tile stores.
 const ROOT = process.env.RFS_FLOOD_MAPS_ROOT ?? `${os.homedir()}/data/fldpln-merged/tiles-zarr`;
 const TILE = "N24W104_FABDEM_V1-2";
-const TILE_PATH = `lat=24/lon=-104/${TILE}.zarr`;
+// the store leaf is the constant fldpln.zarr — the lat=/lon= partition identifies the cell, and the
+// DEM tile name lives in the store's `tile` attr and keys manifest.json's `tiles` map
+const TILE_PATH = "lat=24/lon=-104/fldpln.zarr";
 const RIVER_ID = 770148173;
 const G_ROW0 = Math.round((90 - (24 + 1.1)) * 3600);
 const G_COL0 = Math.round((-104 - 0.1 + 180) * 3600);

@@ -71,7 +71,7 @@ class FloodMapsIndex {
 
   // tiles whose river ids have been folded into riverTiles (viewport-driven coverage)
   /**
-   * The flood library root — manifest.json and the lat=*\/lon=*\/*.zarr stores — comes from
+   * The flood library root — manifest.json and the lat=*\/lon=*\/fldpln.zarr stores — comes from
    * config: it sits under the configured v3Base like every other v3 dataset, so a consumer that
    * has called configure() need say nothing here. `base` is an escape hatch for tests reading a
    * local tree off disk with their own fetcher; app code leaves it alone.
@@ -102,7 +102,7 @@ class FloodMapsIndex {
     );
     for (const name of idx.tilePath.keys()) {
       const h = await idx.tile(name);
-      for (const c of h.attrs.rivers.riverId) {
+      for (const c of h.riverIds) {
         const list = idx.riverTiles.get(c);
         if (list) list.push(name);
         else idx.riverTiles.set(c, [name]);
@@ -136,12 +136,13 @@ class FloodMapsIndex {
       let h;
       try {
         h = await this.tile(name);
-      } catch {
+      } catch (err) {
+        console.warn(`flood-maps: tile ${name} unavailable — ${err.message ?? err}`);
         this.activeTiles.delete(name);
         this.tiles.delete(name);
         continue;
       }
-      for (const c of h.attrs.rivers.riverId) {
+      for (const c of h.riverIds) {
         const list = this.riverTiles.get(c);
         if (list) {
           if (!list.includes(name)) list.push(name);
@@ -169,10 +170,16 @@ class FloodMapsIndex {
     if (!attrs.schemaVersion?.startsWith("tiles-1.")) {
       throw new Error(`${name}: unsupported store schema ${attrs.schemaVersion}`);
     }
+    // The store's river directory keys this list `comid` (schema tiles-1.4.x); riverId is this
+    // package's vocabulary everywhere else, so normalize once here and let the rest of the class
+    // read h.riverIds. Fail loudly on drift: a silently missing list means empty coverage, which
+    // looks like "this viewport has no flood data" rather than a schema mismatch.
+    const riverIds = attrs.rivers?.comid;
+    if (!riverIds) throw new Error(`${name}: store attrs.rivers has no comid list`);
     const rank = /* @__PURE__ */ new Map();
-    attrs.rivers.riverId.forEach((c, i) => rank.set(c, i));
+    riverIds.forEach((c, i) => rank.set(c, i));
     const root = zarr.root(fetcherStore(storeUrl, this.fetcher));
-    return {attrs, rank, root, arrays: /* @__PURE__ */ new Map()};
+    return {attrs, riverIds, rank, root, arrays: /* @__PURE__ */ new Map()};
   }
 
   array(h, name) {
