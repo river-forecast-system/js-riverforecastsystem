@@ -185,7 +185,13 @@ class FloodMapsIndex {
   array(h, name) {
     let a = h.arrays.get(name);
     if (!a) {
-      a = zarr.open(h.root.resolve(name), {kind: "array"});
+      // open.v3, not the version-agnostic open: these stores are v3 (openTile has already read
+      // their zarr.json and checked schemaVersion), and the agnostic path guesses v2 first, so
+      // every array cost a doomed .zattrs GET before falling back. Worse, that fallback only fires
+      // for zarrita's own not-found errors — an origin that answers missing keys with anything but
+      // 404 (CloudFront over an S3 bucket without s3:ListBucket returns 403) makes the probe throw
+      // instead, and the v3 read never happens.
+      a = zarr.open.v3(h.root.resolve(name), {kind: "array"});
       h.arrays.set(name, a);
     }
     return a;

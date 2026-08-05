@@ -40,6 +40,11 @@ const _floodMapsTileBoundariesFile = "tile_boundaries.pmtiles";
 const floodMapsBase = () => `${v3Base()}/flood-maps`;
 const floodMapsManifest = () => `${floodMapsBase()}/${_floodMapsManifestFile}`;
 const floodMapsTileBoundaries = () => `${floodMapsBase()}/${_floodMapsTileBoundariesFile}`;
+// The flow graph behind topology selection (hydrography/riverNetwork.js). It sits at the v3 root
+// rather than under flood-maps/ because that is where the FIM pipeline writes it, and it covers
+// the reaches the flood library covers — a subset of the network, not all of it.
+const _riverNetworkGraphFile = "network_graph_fim.json";
+const riverNetworkGraph = () => `${v3Base()}/${_riverNetworkGraphFile}`;
 
 // ── map-styles ─────────────────────────────────────────────────────────────
 const stylesets = Object.freeze(["timeseries", "max-flow", "time-to-peak", "below-q95"]);
@@ -59,7 +64,7 @@ export {
   // forecast url builders
   forecastDir, forecastZarr,
   // flood map (FLDPLN) url builders
-  floodMapsBase, floodMapsManifest, floodMapsTileBoundaries,
+  floodMapsBase, floodMapsManifest, floodMapsTileBoundaries, riverNetworkGraph,
   // map-styles url builders
   stylesets, streamsStyles,
 }
