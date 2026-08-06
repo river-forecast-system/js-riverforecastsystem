@@ -5,7 +5,7 @@
 // flood-maps/ — so configuring this one value points every reader and url builder at the same tree.
 
 const DEFAULTENDPOINTS = {
-  v3Base: "https://d3nbgbhk5goaof.cloudfront.net/synthetic-v3-data"
+  v3Base: "https://d3nbgbhk5goaof.cloudfront.net/sample-data"
 };
 const OVERRIDEENDPOINTS = {
   v3Base: ""

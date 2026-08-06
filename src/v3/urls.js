@@ -40,11 +40,12 @@ const _floodMapsTileBoundariesFile = "tile_boundaries.pmtiles";
 const floodMapsBase = () => `${v3Base()}/flood-maps`;
 const floodMapsManifest = () => `${floodMapsBase()}/${_floodMapsManifestFile}`;
 const floodMapsTileBoundaries = () => `${floodMapsBase()}/${_floodMapsTileBoundariesFile}`;
-// The flow graph behind topology selection (hydrography/riverNetwork.js). It sits at the v3 root
-// rather than under flood-maps/ because that is where the FIM pipeline writes it, and it covers
-// the reaches the flood library covers — a subset of the network, not all of it.
+// The flow graph behind topology selection (hydrography/riverNetwork.js). It sits under
+// flood-maps/ because that is where the FIM pipeline writes it — it is derived from the library's
+// own coverage (comid_tiles.parquet), so it covers the reaches the flood library covers, a subset
+// of the network rather than all of it.
 const _riverNetworkGraphFile = "network_graph_fim.json";
-const riverNetworkGraph = () => `${v3Base()}/${_riverNetworkGraphFile}`;
+const riverNetworkGraph = () => `${floodMapsBase()}/${_riverNetworkGraphFile}`;
 
 // ── map-styles ─────────────────────────────────────────────────────────────
 const stylesets = Object.freeze(["timeseries", "max-flow", "time-to-peak", "below-q95"]);
