@@ -45,11 +45,11 @@ const getTimeCoordinateValues = async ({zarrUrl}) => {
     days: 60 * 60 * 24,
   }[units.split("since")[0].trim()];
 
-  return [...array.data].map(t => {
-    let origin = new Date(originTime);
-    origin.setSeconds(origin.getSeconds() + (Number(t) * conversionFactor));
-    return origin;
-  });
+  // Offset the epoch directly rather than with Date.setSeconds - setSeconds writes local time
+  // fields, so any timestamp on the far side of a DST boundary from the origin comes back shifted
+  // by an hour (e.g. 23:00 the previous day) and reads as the wrong date under getUTC*.
+  const originEpoch = originTime.getTime();
+  return [...array.data].map(t => new Date(originEpoch + (Number(t) * conversionFactor * 1000)));
 }
 
 export {

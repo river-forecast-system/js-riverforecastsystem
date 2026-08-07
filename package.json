@@ -1,26 +1,49 @@
 {
-  "name": "riverforecastsystem",
-  "version": "0.0.3",
+  "name": "rfsjs",
+  "version": "0.2.0",
   "description": "Client for reading GEOGLOWS RFS data from publicly archived Zarr data on S3.",
   "license": "ISC",
   "author": "Riley Hales",
   "type": "module",
   "sideEffects": false,
-  "main": "dist/index.js",
+  "main": "dist/index.esm.js",
   "module": "dist/index.esm.js",
-  "scripts": {
-    "test": "node test/test.js",
-    "build": "rm -rf dist && rollup -c rollup.config.js",
-    "deploy": "npm run build && npm publish --access public"
+  "exports": {
+    ".": "./dist/index.esm.js",
+    "./v2": "./dist/v2/index.esm.js",
+    "./v3": "./dist/v3/index.esm.js",
+    "./v3/discharge": "./dist/v3/discharge.esm.js",
+    "./v3/floodmaps": "./dist/v3/floodmaps.esm.js",
+    "./v3/hydrography": "./dist/v3/hydrography.esm.js",
+    "./v3/plots": "./dist/v3/plots.esm.js"
   },
-  "dependencies": {
-    "zarrita": "^0.5.4"
+  "scripts": {
+    "test": "vitest run",
+    "test:live": "node test/tests.js",
+    "build": "rm -rf dist && rollup -c rollup.config.js"
+  },
+  "peerDependencies": {
+    "chart.js": "^4.5.1",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "chartjs-chart-matrix": "^3.0.5",
+    "chartjs-plugin-zoom": "^2.2.0",
+    "date-fns": "^4.4.0",
+    "numcodecs": "^0.3.2"
+  },
+  "peerDependenciesMeta": {
+    "chart.js": {"optional": true},
+    "chartjs-adapter-date-fns": {"optional": true},
+    "chartjs-chart-matrix": {"optional": true},
+    "chartjs-plugin-zoom": {"optional": true},
+    "date-fns": {"optional": true}
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.53.3"
+    "@rollup/plugin-terser": "^1.0.0",
+    "rollup": "4.59.0",
+    "vitest": "^4.1.10",
+    "zarrita": "^0.7.3"
   },
   "files": [
     "dist"
