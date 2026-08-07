@@ -1,6 +1,6 @@
 {
   "name": "rfsjs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Client for reading GEOGLOWS RFS data from publicly archived Zarr data on S3.",
   "license": "ISC",
   "author": "Riley Hales",
@@ -20,7 +20,8 @@
   "scripts": {
     "test": "vitest run",
     "test:live": "node test/tests.js",
-    "build": "rm -rf dist && rollup -c rollup.config.js"
+    "build": "rm -rf dist && rollup -c rollup.config.js",
+    "prepare": "npm run build"
   },
   "peerDependencies": {
     "chart.js": "^4.5.1",
