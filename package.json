@@ -1,8 +1,8 @@
 {
-  "name": "rfsjs",
+  "name": "riverforecastsystem",
   "version": "0.2.2",
   "description": "Client for reading GEOGLOWS RFS data from publicly archived Zarr data on S3.",
-  "license": "ISC",
+  "license": "BSD-3-Clause-Clear",
   "author": "Riley Hales",
   "type": "module",
   "sideEffects": false,
