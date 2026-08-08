@@ -24,7 +24,7 @@ const excludeNumcodecs = () => ({
       export default {
         fromConfig() {
           throw new Error(
-            "rfsjs excludes ${source}: the v3 stores are written with blosc(zstd, shuffle) and " +
+            "riverforecastsystem excludes ${source}: the v3 stores are written with blosc(zstd, shuffle) and " +
             "blosc is the only numcodecs wasm build bundled. A store compressed with this codec " +
             "cannot be read by this build."
           );
