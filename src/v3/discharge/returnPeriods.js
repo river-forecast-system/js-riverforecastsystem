@@ -16,7 +16,7 @@ const allowedResolutions = ["hourly", "daily"];
 
 export default async function ({riverIndex, riverId, resolution = "hourly"}) {
   /*
-  The dimension order is (returnPeriod, riverId)
+  The dimension order is (riverId, recurrence_interval)
   Retrieves return period discharge values for a given riverId.
   The returns an object where the keys are integer return period values (in years) and the values are discharge values (in m3/s) of structure:
   {

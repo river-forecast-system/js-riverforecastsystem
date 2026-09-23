@@ -6,7 +6,7 @@ import {retrospectiveZarr} from "../urls.js";
 
 export default async function ({resolution = 'daily', riverIndex, riverId}) {
   /*
-  The dimension order is (time, riverId)
+  The dimension order is (riverId, time)
   Retrieves retrospective discharge for a given riverId. The returns an object of structure:
   {
     riverId: Number,

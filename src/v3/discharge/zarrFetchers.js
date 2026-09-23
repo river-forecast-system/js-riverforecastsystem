@@ -1,7 +1,7 @@
 'use strict';
 
 // all data from rfsv3 are zarr version/format 3
-import {FetchStore, get, open} from "zarrita";
+import {FetchStore, get, open, root, withMaybeConsolidatedMetadata} from "zarrita";
 
 // The stores are written with blosc(cname=zstd, clevel=5, shuffle), which zarrita's default codec
 // registry already resolves — no registration step. rollup.config.js keeps numcodecs' blosc wasm
@@ -11,9 +11,29 @@ const timeVariable = "time";
 const memberVariable = "member";
 const dischargeVariable = "Q";
 
+// Every store's metadata is consolidated into its root zarr.json, so opening a store is one request
+// and every array in it opens from that without fetching its own zarr.json. The one exception is
+// hydrography/global/metadata.zarr, which falls back to reading each array's zarr.json. The opened
+// root is cached per url so every array read from one store shares it.
+const storeRoots = new Map();
+
+const openStoreRoot = (zarrUrl) => {
+  let storeRoot = storeRoots.get(zarrUrl);
+  if (!storeRoot) {
+    storeRoot = withMaybeConsolidatedMetadata(new FetchStore(zarrUrl), {format: "v3"})
+      .then(store => root(store))
+      .catch(e => {
+        storeRoots.delete(zarrUrl);
+        throw e;
+      });
+    storeRoots.set(zarrUrl, storeRoot);
+  }
+  return storeRoot;
+}
+
 const openZarrArray = async ({zarrUrl, variable}) => {
-  const store = new FetchStore(`${zarrUrl}/${variable}`);
-  return await open.v3(store, {kind: "array"});
+  const storeRoot = await openStoreRoot(zarrUrl);
+  return await open.v3(storeRoot.resolve(variable), {kind: "array"});
 }
 
 // The v3 stores use bitrounding, which makes low mantissa bits 0 but compresses much better.

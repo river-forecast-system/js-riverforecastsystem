@@ -16,11 +16,14 @@ const _regionFile = (kind, suffix) => ({region} = {}) => {
 };
 // global products
 const streamsPmtiles = () => `${hydrographyGlobal()}/streams.pmtiles`;
+// catchments and regions pmtiles are specified but not currently built
 const catchmentsPmtiles = () => `${hydrographyGlobal()}/catchments.pmtiles`;
 const regionsPmtiles = () => `${hydrographyGlobal()}/regions.pmtiles`;
 const regionsGeoparquet = () => `${hydrographyGlobal()}/regions.geo.parquet`;
 const hydrographyMetadataZarr = () => `${hydrographyGlobal()}/metadata.zarr`;
 const riverNamesJson = () => `${hydrographyGlobal()}/riverNames.json`;
+// optional, not written by default: every source TDX-Hydro reach to the v3 riverId representing it
+const tdxhydroToV3IdMapParquet = () => `${hydrographyGlobal()}/tdxhydro_to_v3_id_map.parquet`;
 // the global table without a region, that region's slice of it with one
 const hydrographyMetadataParquet = ({region} = {}) => (region == null
   ? `${hydrographyGlobal()}/metadata.parquet`
@@ -33,6 +36,25 @@ const streamsGeoparquet = _regionFile("streams", ".geo.parquet");
 const catchmentsGeoparquet = _regionFile("catchments", ".geo.parquet");
 const confluencesGeoparquet = _regionFile("confluences", ".geo.parquet");
 const boundaryGeoparquet = _regionFile("boundary", ".geo.parquet");
+// per-region edits made to the source TDX-Hydro, the provenance of the network
+const modificationRecords = Object.freeze([
+  "lake_edits", "zero_length_streams", "coastal_orphans",
+  "headwater_dissolves", "branches_to_prune", "short_consolidations",
+]);
+const modificationRecordJson = ({region, record} = {}) => {
+  if (!record) throw new Error("modificationRecordJson requires a record, consult modificationRecords for valid values");
+  if (!modificationRecords.includes(record)) {
+    throw new Error(`Invalid record: ${record}. Must be one of ${modificationRecords.join(", ")}.`);
+  }
+  return `${hydrographyRegion({region})}/mods/${record}.json`;
+};
+// per-region routing configs written by river-route. routing.parquet carries no region suffix;
+// gridweights are named for the forcing grid they were cut against
+const routingParquet = ({region} = {}) => `${hydrographyRegion({region})}/routing.parquet`;
+const gridWeightsNetcdf = ({region, grid = "ERA5"} = {}) => {
+  _requireRegion(region, "gridWeightsNetcdf");
+  return `${hydrographyRegion({region})}/gridweights_${grid}_${region}.nc`;
+};
 
 // ── retrospective ────────────────────────────────────────────────────────────
 const allowedResolutions = ["hourly", "daily", "monthly", "yearly"];
@@ -85,8 +107,9 @@ export {
   // hydrography url builders
   hydrographyBase, hydrographyGlobal, hydrographyRegion,
   streamsPmtiles, catchmentsPmtiles, regionsPmtiles, regionsGeoparquet,
-  hydrographyMetadataZarr, hydrographyMetadataParquet, watershedsParquet, riverNamesJson,
+  hydrographyMetadataZarr, hydrographyMetadataParquet, watershedsParquet, riverNamesJson, tdxhydroToV3IdMapParquet,
   streamsGeoparquet, catchmentsGeoparquet, confluencesGeoparquet, boundaryGeoparquet,
+  modificationRecords, modificationRecordJson, routingParquet, gridWeightsNetcdf,
   // retrospective url builders
   retrospectiveZarr, returnPeriodsZarr, maximumsZarr,
   // forecast url builders

@@ -13,7 +13,7 @@ import {forecastZarr} from "../urls.js";
 
 export default async function ({date, riverIndex, riverId}) {
   /*
-  The dimension order is (member, time, riverId)
+  The dimension order is (riverId, member, time)
   Retrieves the ensemble forecast discharge for a given riverId and initialization date. The
   returns an object of structure:
   {

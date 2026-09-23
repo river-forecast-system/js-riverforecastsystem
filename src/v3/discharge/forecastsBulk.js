@@ -41,7 +41,7 @@ const getForecastStore = ({zarrUrl}) => {
 
 export default async function ({date, riverIndices, riverIds, onProgress}) {
   /*
-  The dimension order is (member, time, riverId)
+  The dimension order is (riverId, member, time)
   Retrieves the ensemble forecast for many rivers in one pass, which is what drives the flood
   extent animation. Only the median survives per reach — see membersToMedian. The returns an
   object of structure:
@@ -59,9 +59,9 @@ export default async function ({date, riverIndices, riverIds, onProgress}) {
   a deprecated fallback: it costs a scan of the riverId coordinate to translate, so a caller that
   has indices should pass them.
 
-  Discharge is chunked across the river axis (tens of MB per chunk), so reads are grouped by chunk
-  and each chunk is pulled exactly once. A flood corridor's reaches are adjacent in the store, so a
-  whole selection usually costs one or two chunks instead of one per reach.
+  Discharge is chunked one river per chunk, each chunk the river's whole ensemble over the whole
+  horizon, and sharded 250 rivers per shard. A flood corridor's reaches are adjacent in the store,
+  so a whole selection usually lands in one or two shards.
 
   Rows outside the store's river axis are reported in missing rather than throwing. A selection
   can legitimately mix reaches that do and don't appear in a given forecast run.
